@@ -1,3 +1,4 @@
+using System.Reflection;
 using advent_of_code_2022.Puzzles;
 
 namespace advent_of_code_2022
@@ -6,14 +7,18 @@ namespace advent_of_code_2022
     {
         private readonly Dictionary<string, PuzzleBase> _puzzles = new();
 
-        public void RegisterPuzzle(PuzzleBase puzzle)
+        public PuzzleSolver()
         {
-            _puzzles.Add(puzzle.Name, puzzle);
-            Console.WriteLine($"Registered puzzle with name '{puzzle.Name}'");
+            RegisterPuzzles();
         }
 
-        public string[] GetAllPuzzleNames()
-            => _puzzles.Keys.ToArray();
+        public void SolveAllPuzzles()
+        {
+            foreach(var puzzleName in _puzzles.Keys)
+            {
+                SolvePuzzle(puzzleName);
+            }
+        }
 
         public void SolvePuzzle(string name)
         {
@@ -30,6 +35,20 @@ namespace advent_of_code_2022
             else
             {
                 throw new InvalidOperationException($"Could not find a puzzle with name '{name}'");
+            }
+        }
+
+        private void RegisterPuzzles()
+        {
+            // Auto-discover puzzles using reflection
+            foreach (var puzzleType in Assembly.GetExecutingAssembly().GetTypes()
+                .Where(x => x.BaseType == typeof(PuzzleBase) && x.GetConstructor(Type.EmptyTypes) != null))
+            {
+                var puzzle = Activator.CreateInstance(puzzleType) as PuzzleBase 
+                    ?? throw new InvalidOperationException($"Could not create a instance of type '{puzzleType}'");
+
+                _puzzles.Add(puzzle.Name, puzzle);
+                Console.WriteLine($"Registered puzzle with name '{puzzle.Name}'");
             }
         }
     }
