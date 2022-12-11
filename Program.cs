@@ -3,11 +3,19 @@
 var solver = new PuzzleSolver();
 
 Console.WriteLine("Advent of code 2022");
-if (args.Length == 1)
+
+try
 {
-    solver.SolvePuzzle(args[0]);
+    if (args.Length == 1)
+    {
+        solver.SolvePuzzle(args[0]);
+    }
+    else
+    {
+        solver.SolveAllPuzzles();
+    }
 }
-else
+catch(Exception ex)
 {
-    solver.SolveAllPuzzles();
+    Console.WriteLine($"Failed to solve one or more puzzle(s): {ex.Message}");
 }

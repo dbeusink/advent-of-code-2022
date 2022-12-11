@@ -3,7 +3,7 @@ namespace advent_of_code_2022.Puzzles
 {
     internal class Day1 : PuzzleBase
     {
-        public Day1() : base("Day1") { }
+        public Day1() : base(nameof(Day1)) { }
 
         public override string SolvePart1()
         {
