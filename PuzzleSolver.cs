@@ -23,9 +23,8 @@ internal class PuzzleSolver
     {
         if (_puzzles.TryGetValue(name, out var puzzle))
         {
-            Console.WriteLine($"Puzzle '{name}': Initializing puzzle...");
+            Console.WriteLine($"Puzzle '{name}': Solving puzzle...");
             puzzle.Initialize();
-            Console.WriteLine($"Puzzle '{name}': Solving part 1...");
             var resultPart1 = puzzle.SolvePart1();
             Console.WriteLine($"Puzzle '{name}': Output part 1: {resultPart1}");
             var resultPart2 = puzzle.SolvePart2();

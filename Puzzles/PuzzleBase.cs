@@ -18,7 +18,7 @@ internal abstract class PuzzleBase
         }
 
         Input = InputLoader.LoadPuzzleInputByName(Name);
-        Console.WriteLine($"Loaded {Input?.Length ?? 0} lines as puzzle input for puzzle '{Name}'");
+        Console.WriteLine($"Puzzle '{Name}': Read {Input?.Length ?? 0} lines as puzzle input");
     }
 
     public void AssertInputLoaded()
