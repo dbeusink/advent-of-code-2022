@@ -7,40 +7,17 @@ internal class Day2 : PuzzleBase
     public override string SolvePart1()
     {
         AssertInputLoaded();
-        var rounds = new List<RockPaperScissorsRound>();
-        foreach (var line in Input ?? throw new InvalidOperationException("Input cannot be null"))
-        {
-            rounds.Add(GetRoundPart1(line));
-        }
-        var totalScore = rounds.Sum(x => x.CalculateScore());
-        return totalScore.ToString();
+        return Input!.Select(x => GetRoundPart1(x))
+            .Sum(x => x.CalculateScore())
+            .ToString();
     }
 
     public override string SolvePart2()
     {
         AssertInputLoaded();
-        var rounds = new List<RockPaperScissorsRound>();
-        foreach (var line in Input ?? throw new InvalidOperationException("Input cannot be null"))
-        {
-            rounds.Add(GetRoundPart2(line));
-        }
-        var totalScore = rounds.Sum(x => x.CalculateScore());
-        return totalScore.ToString();
-    }
-
-    public enum RockPaperScissors
-    {
-        Unknown = 0,
-        Rock = 1,
-        Paper = 2,
-        Scissors = 3,
-    }
-
-    public enum Score
-    {
-        Lose = 0,
-        Draw = 3,
-        Win = 6,
+        return Input!.Select(x => GetRoundPart2(x))
+            .Sum(x => x.CalculateScore())
+            .ToString();
     }
 
     private RockPaperScissorsRound GetRoundPart1(string input)
@@ -63,27 +40,7 @@ internal class Day2 : PuzzleBase
         {
             var opponent = GetRockPaperScissorsByChar(input[0]);
             var result = GetScoreResultByChar(input[2]);
-            var player = result switch
-            {
-                Score.Lose => opponent switch
-                {
-                    RockPaperScissors.Rock => RockPaperScissors.Scissors,
-                    RockPaperScissors.Paper => RockPaperScissors.Rock,
-                    RockPaperScissors.Scissors => RockPaperScissors.Paper,
-                    _ => throw new InvalidDataException($"Could not calculate losing hand for opponent '{opponent}' with round result '{result}'")
-                },
-                Score.Draw => opponent,
-                Score.Win => opponent switch
-                {
-                    RockPaperScissors.Rock => RockPaperScissors.Paper,
-                    RockPaperScissors.Paper => RockPaperScissors.Scissors,
-                    RockPaperScissors.Scissors => RockPaperScissors.Rock,
-                    _ => throw new InvalidDataException($"Could not calculate winning hand for opponent '{opponent}' with round result '{result}'")
-                },
-                _ => throw new InvalidDataException($"Could not calculate hand for opponent '{opponent}' with round result '{result}'")
-            };
-            
-            return new RockPaperScissorsRound(opponent, player);
+            return new RockPaperScissorsRound(opponent, GetMoveByResult(opponent, result));
         }
         else
         {
@@ -110,6 +67,29 @@ internal class Day2 : PuzzleBase
             'Y' => Score.Draw,
             'Z' => Score.Win,
             _ => throw new InvalidDataException($"Could not get score from symbol '{symbol}'")
+        };
+    }
+
+    private RockPaperScissors GetMoveByResult(RockPaperScissors opponent, Score result)
+    {
+        return result switch
+        {
+            Score.Lose => opponent switch
+            {
+                RockPaperScissors.Rock => RockPaperScissors.Scissors,
+                RockPaperScissors.Paper => RockPaperScissors.Rock,
+                RockPaperScissors.Scissors => RockPaperScissors.Paper,
+                _ => throw new InvalidDataException($"Could not calculate losing hand for opponent '{opponent}' with round result '{result}'")
+            },
+            Score.Draw => opponent,
+            Score.Win => opponent switch
+            {
+                RockPaperScissors.Rock => RockPaperScissors.Paper,
+                RockPaperScissors.Paper => RockPaperScissors.Scissors,
+                RockPaperScissors.Scissors => RockPaperScissors.Rock,
+                _ => throw new InvalidDataException($"Could not calculate winning hand for opponent '{opponent}' with round result '{result}'")
+            },
+            _ => throw new InvalidDataException($"Could not calculate hand for opponent '{opponent}' with round result '{result}'")
         };
     }
 
@@ -152,5 +132,20 @@ internal class Day2 : PuzzleBase
                 _ => throw new InvalidDataException($"Could not calculate score for player '{_player}' with opponent '{_opponent}'")
             };
         }
+    }
+
+    private enum RockPaperScissors
+    {
+        Unknown = 0,
+        Rock = 1,
+        Paper = 2,
+        Scissors = 3,
+    }
+
+    private enum Score
+    {
+        Lose = 0,
+        Draw = 3,
+        Win = 6,
     }
 }
