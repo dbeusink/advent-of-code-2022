@@ -1,7 +1,6 @@
 ﻿using advent_of_code_2022;
 
 var solver = new PuzzleSolver();
-
 Console.WriteLine("Advent of code 2022");
 
 try
