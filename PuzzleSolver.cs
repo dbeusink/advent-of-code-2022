@@ -23,12 +23,19 @@ internal class PuzzleSolver
     {
         if (_puzzles.TryGetValue(name, out var puzzle))
         {
-            Console.WriteLine($"Puzzle '{name}': Solving puzzle...");
-            puzzle.Initialize();
-            var resultPart1 = puzzle.SolvePart1();
-            Console.WriteLine($"Puzzle '{name}': Output part 1: {resultPart1}");
-            var resultPart2 = puzzle.SolvePart2();
-            Console.WriteLine($"Puzzle '{name}': Output part 2: {resultPart2}");
+            try
+            {
+                puzzle.Initialize();
+                Console.WriteLine($"Puzzle '{name}': Solving puzzle...");
+                var resultPart1 = puzzle.SolvePart1();
+                Console.WriteLine($"Puzzle '{name}': Output part 1: {resultPart1}");
+                var resultPart2 = puzzle.SolvePart2();
+                Console.WriteLine($"Puzzle '{name}': Output part 2: {resultPart2}");
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Puzzle '{name}': Exception! {ex.Message}");
+            }
         }
         else
         {
@@ -46,7 +53,7 @@ internal class PuzzleSolver
                 ?? throw new InvalidOperationException($"Could not create a instance of type '{puzzleType}'");
 
             _puzzles.Add(puzzle.Name, puzzle);
-            Console.WriteLine($"Registered puzzle with name '{puzzle.Name}'");
+            Console.WriteLine($"Discovered and registered puzzle with name '{puzzle.Name}'");
         }
     }
 }
