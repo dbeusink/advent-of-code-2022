@@ -39,7 +39,7 @@ internal class PuzzleSolver
         }
         else
         {
-            Console.WriteLine($"Could not find a puzzle with name '{name}'");
+            Console.WriteLine($"Puzzle '{name}': Puzzle not found!");
         }
     }
 
