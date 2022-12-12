@@ -39,7 +39,7 @@ internal class PuzzleSolver
         }
         else
         {
-            throw new InvalidOperationException($"Could not find a puzzle with name '{name}'");
+            Console.WriteLine($"Could not find a puzzle with name '{name}'");
         }
     }
 
