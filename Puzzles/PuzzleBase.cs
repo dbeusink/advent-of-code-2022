@@ -2,15 +2,15 @@ namespace advent_of_code_2022.Puzzles;
 
 internal abstract class PuzzleBase
 {
-    public string Name { get; protected set; } = string.Empty;
-    protected string[]? Input { get; set; }
+    public string Name { get; private set; }
+    protected string[]? Input { get; private set; }
 
     public PuzzleBase(string puzzleName)
     {
         Name = puzzleName;
     }
 
-    public virtual void Initialize()
+    public void Initialize()
     {
         if (string.IsNullOrWhiteSpace(Name))
         {
@@ -30,5 +30,6 @@ internal abstract class PuzzleBase
     }
 
     public abstract string SolvePart1();
+
     public abstract string SolvePart2();
 }

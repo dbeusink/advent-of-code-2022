@@ -63,7 +63,6 @@ internal class Day5 : PuzzleBase
         {
             _stacks.Clear();
         }
-        
         var stackAmount = (Input![0].Length + 1) / 4; // Add virtual space to calculate correctly (last line contains no terminating space). Syntax = '[' + Letter + ']' + space = 4
         for(int i=1; i<=stackAmount; i++)
         {
