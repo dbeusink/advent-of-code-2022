@@ -12,21 +12,23 @@ internal class Day7 : PuzzleBase
         var interpreter = new TerminalInterpreter(root, Input!);
         interpreter.Execute();
 
-        // Loop through all directories below 100000
+        // Get all directories wit a size <= 100000
         var dirs = new List<Directory>();
-        AddSubDirs(root);
+        AddDirectoriesBelowSize(root, 100000);
 
-        return dirs.Sum(x => x.GetTotalSize()).ToString();
+        var result = dirs.Sum(x => x.GetTotalSize());
+        return result.ToString();
 
-        void AddSubDirs(Directory dir)
+        // Recursive :)
+        void AddDirectoriesBelowSize(Directory directory, int maxSize)
         {
-            foreach(var sub in dir.Subdirectories.Values)
+            foreach(var sub in directory.Subdirectories.Values)
             {
-                if (sub.GetTotalSize() <= 100000)
+                if (sub.GetTotalSize() <= maxSize)
                 {
                     dirs.Add(sub);
                 }
-                AddSubDirs(sub);
+                AddDirectoriesBelowSize(sub, maxSize);
             }
         }
     }
@@ -34,14 +36,41 @@ internal class Day7 : PuzzleBase
     public override string SolvePart2()
     {
         AssertInputLoaded();
-        return string.Empty;
+        var root = new Directory(null, "/");
+        var interpreter = new TerminalInterpreter(root, Input!);
+        interpreter.Execute();
+
+        // Calculate disk space required
+        var unusedDiskSpace = 70000000 - root.GetTotalSize();
+        var diskSpaceRequired = 30000000 - unusedDiskSpace;
+
+        // Flatten directories
+        var allDirectories = new List<Directory>() { root };
+        AddDirectories(root);
+
+        var result = allDirectories.OrderBy(x => x.GetTotalSize())
+            .First(x => x.GetTotalSize() >= diskSpaceRequired)
+            .GetTotalSize();
+
+        return result.ToString();
+
+        // Recursive :)
+        void AddDirectories(Directory directory)
+        {
+            foreach(var sub in directory.Subdirectories.Values)
+            {
+                allDirectories.Add(sub);
+                AddDirectories(sub);
+            }
+        }
     }
 
     private class TerminalInterpreter
     {
         private const string _rootCommand = "$ cd /";
-        private Directory? _current;
+
         private readonly string[] _commands;
+        private Directory? _current;
         private int _currentPosition;
 
         public TerminalInterpreter(Directory root, string[] commands)
@@ -55,7 +84,8 @@ internal class Day7 : PuzzleBase
             // Verify start
             if (_commands[_currentPosition] != _rootCommand)
             {
-                throw new InvalidDataException($"Input file is not in the correct format! Expected '{_rootCommand}' got '{_commands[_currentPosition]}'");
+                throw new InvalidDataException($"Input file is not in the correct format! " + 
+                    "Expected '{_rootCommand}' got '{_commands[_currentPosition]}'");
             }
 
             _currentPosition = 1;
@@ -77,7 +107,10 @@ internal class Day7 : PuzzleBase
 
         private int ExecuteList()
         {
-            var listing = _commands.Skip(_currentPosition+1).TakeWhile(x => !x.StartsWith('$')).ToArray();
+            var listing = _commands.Skip(_currentPosition+1)
+                .TakeWhile(x => !x.StartsWith('$'))
+                .ToArray();
+
             _current?.AddListing(listing);
             return listing.Length + 1;
         }
@@ -92,12 +125,15 @@ internal class Day7 : PuzzleBase
             {
                 _current = _current?.Subdirectories[directory];
             }
+
             return 1;
         }
     }
 
     private class Directory
     {
+        private int _totalSizeCache = -1;
+
         public string Name { get; }
         public Directory? Parent { get; }
         public Dictionary<string, Directory> Subdirectories { get; } = new();
@@ -127,9 +163,12 @@ internal class Day7 : PuzzleBase
 
         public int GetTotalSize()
         {
-            int count = Files.Sum(x => x.Size);
-            count += Subdirectories.Values.Sum(x => x.GetTotalSize());
-            return count;
+            if (_totalSizeCache == -1)
+            {
+                _totalSizeCache = Files.Sum(x => x.Size) + Subdirectories.Values.Sum(x => x.GetTotalSize());
+            }
+
+            return _totalSizeCache;
         }
     }
 
