@@ -6,4 +6,4 @@ Hi, welcome to my Advent of Code 2022 repository.
 
 [Advent of Code](https://adventofcode.com/)
 
-[![.NET](https://github.com/dbeusink/advent-of-code-2022/actions/workflows/dotnet.yml/badge.svg)](https://github.com/dbeusink/advent-of-code-2022/actions/workflows/dotnet.yml)
+[![.NET](https://github.com/dbeusink/advent-of-code-2022/actions/workflows/dotnet.yml/badge.svg?branch=main)](https://github.com/dbeusink/advent-of-code-2022/actions/workflows/dotnet.yml)
