@@ -1,9 +1,9 @@
 ﻿using advent_of_code_2022;
 
 Console.WriteLine("-- Advent of code 2022 --");
-var solver = new PuzzleSolver();
 try
 {
+    var solver = new PuzzleSolver();
     if (args.Length == 1)
     {
         solver.SolvePuzzle(args[0]);
@@ -15,5 +15,5 @@ try
 }
 catch(Exception ex)
 {
-    Console.WriteLine($"Failed to solve one or more puzzle(s): {ex.Message}");
+    Console.WriteLine($"Unhandled exception not caught by {nameof(PuzzleSolver)}: {ex.Message}");
 }
