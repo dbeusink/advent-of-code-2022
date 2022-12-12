@@ -1,4 +1,3 @@
-using System.Data;
 namespace advent_of_code_2022.Puzzles;
 
 internal class Day7 : PuzzleBase
