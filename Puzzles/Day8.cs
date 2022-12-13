@@ -94,13 +94,95 @@ internal class Day8 : PuzzleBase
         var rows = grid.GetLength(0);
         var columns = grid.GetLength(1);
 
-        // Count visible trees
+        // Count highest scenic score
         var highestScenicScore = 0;
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < columns; j++)
             {
-                // Traverse :)
+                var treeHeight = grid[i, j];
+                var scenicScore = TreesLeft() * TreesRight() * TreesUp() * TreesDown();
+                if (scenicScore > highestScenicScore)
+                {
+                    highestScenicScore = scenicScore;
+                }
+
+                // -- Local functions --
+                int TreesLeft()
+                {
+                    if (j > 0)
+                    {
+                        int trees = 1;
+                        for (int k = j - 1; k > 0; k--)
+                        {
+                            if (grid[i, k] >= treeHeight)
+                            {
+                                break;
+                            }
+                            trees++;
+                        }
+                        return trees;
+                    }
+
+                    return 0;
+                }
+
+                int TreesRight()
+                {
+                    if (j < columns - 1)
+                    {
+                        int trees = 1;
+                        for (int k = j + 1; k < columns - 1; k++)
+                        {
+                            if (grid[i, k] >= treeHeight)
+                            {
+                                break;
+                            }
+                            trees++;
+                        }
+                        return trees;
+                    }
+
+                    return 0;
+                }
+
+                int TreesUp()
+                {
+                    if (i > 0)
+                    {
+                        int trees = 1;
+                        for (int k = i - 1; k > 0; k--)
+                        {
+                            if (grid[k, j] >= treeHeight)
+                            {
+                                break;
+                            }
+                            trees++;
+                        }
+                        return trees;
+                    }
+
+                    return 0;
+                }
+
+                int TreesDown()
+                {
+                    if (i < rows - 1)
+                    {
+                        int trees = 1;
+                        for (int k = i + 1; k < rows - 1; k++)
+                        {
+                            if (grid[k, j] >= treeHeight)
+                            {
+                                break;
+                            }
+                            trees++;
+                        }
+                        return trees;
+                    }
+
+                    return 0;
+                }
             }
         }
 
