@@ -9,45 +9,23 @@ internal class Day9 : PuzzleBase
     public override string SolvePart1()
     {
         AssertInputLoaded();
-
-        var head = new Knot();
-        var tail = new Knot();
-        RunMoves((move) =>
-        {
-            head.Move(move);
-            tail.Follow(head);
-        });
-
-        return tail.History.Count.ToString();
+        return Solve(2).Last().Visited.Count.ToString();
     }
 
     public override string SolvePart2()
     {
         AssertInputLoaded();
+        return Solve(10).Last().Visited.Count.ToString();
+    }
 
-        var knots = new Knot[10];
-        for (int i = 0; i < 10; i++)
+    private Knot[] Solve(int knotCount)
+    {
+        var knots = new Knot[knotCount];
+        for (int i = 0; i < knotCount; i++)
         {
             knots[i] = new Knot();
         }
 
-        var head = knots[0];
-        var tail = knots[9];
-
-        RunMoves((move) =>
-        {
-            head.Move(move);
-            for (int i = 1; i < knots.Length; i++)
-            {
-                knots[i].Follow(knots[i - 1]);
-            }
-        });
-
-        return tail.History.Count.ToString();
-    }
-
-    private void RunMoves(Action<Vector2> stepAction)
-    {
         foreach (var line in Input!)
         {
             var direction = line[0];
@@ -64,49 +42,41 @@ internal class Day9 : PuzzleBase
                     _ => throw new InvalidOperationException($"'{line[0]}' is not a valid direction")
                 };
 
-                stepAction(move);
+                knots[0].Move(move);
+                for (int j = 1; j < knots.Length; j++)
+                {
+                    knots[j].Follow(knots[j - 1]);
+                }
             }
         }
+
+        return knots;
     }
 
     private class Knot
     {
         public Vector2 CurrentPosition { get; private set; }
 
-        public HashSet<Vector2> History { get; } = new();
+        public HashSet<Vector2> Visited { get; } = new();
 
         public Knot()
         {
             CurrentPosition = new Vector2(0, 0);
-            History.Add(CurrentPosition);
+            Visited.Add(CurrentPosition);
         }
 
         public void Move(Vector2 vector)
         {
             CurrentPosition += vector;
-            History.Add(CurrentPosition);
+            Visited.Add(CurrentPosition);
         }
 
         public void Follow(Knot other)
         {
             if (GetDistanceTo(other) > 1)
             {
-                // Get direction
                 var dif = other.CurrentPosition - CurrentPosition;
-                Vector2 move = dif switch
-                {
-                    { X: var x, Y: var y } when x == 0 && y == 0 => new Vector2(0, 0), // No movement
-                    { X: var x, Y: var y } when x == 0 && y > 0 => new Vector2(0, 1),  // Up
-                    { X: var x, Y: var y } when x == 0 && y < 0 => new Vector2(0, -1), // Down
-                    { X: var x, Y: var y } when x < 0 && y == 0 => new Vector2(-1, 0), // Left
-                    { X: var x, Y: var y } when x > 0 && y == 0 => new Vector2(1, 0),  // Right
-                    { X: var x, Y: var y } when x < 0 && y > 0 => new Vector2(-1, 1),  // Left-Up
-                    { X: var x, Y: var y } when x < 0 && y < 0 => new Vector2(-1, -1), // Left-Down
-                    { X: var x, Y: var y } when x > 0 && y > 0 => new Vector2(1, 1),   // Right-Up
-                    { X: var x, Y: var y } when x > 0 && y < 0 => new Vector2(1, -1),  // Right-Down
-                    _ => throw new InvalidOperationException("Could not calculate next move to follow other")
-                };
-
+                var move = new Vector2(Math.Sign(dif.X), Math.Sign(dif.Y));
                 Move(move);
             }
         }
