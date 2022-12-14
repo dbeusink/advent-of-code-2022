@@ -47,7 +47,8 @@ internal class PuzzleSolver
     {
         // Auto-discover puzzles using reflection
         foreach (var puzzleType in Assembly.GetExecutingAssembly().GetTypes()
-            .Where(x => x.BaseType == typeof(PuzzleBase) && x.GetConstructor(Type.EmptyTypes) != null))
+            .Where(x => x.BaseType == typeof(PuzzleBase) && x.GetConstructor(Type.EmptyTypes) != null)
+            .OrderBy(x => x.Name[4..]))
         {
             var puzzle = Activator.CreateInstance(puzzleType) as PuzzleBase 
                 ?? throw new InvalidOperationException($"Could not create a instance of type '{puzzleType}'");
