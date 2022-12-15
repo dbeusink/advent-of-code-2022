@@ -1,4 +1,3 @@
-using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,60 +9,42 @@ internal class Day11 : PuzzleBase
 
     public override string SolvePart1()
     {
-
         AssertInputLoaded();
 
-        var group = new MonkeyGroup();
-        var sb = new StringBuilder();
+        var gang = GetMonkeyGang();
+        gang.Run(20, x => x / 3);
 
-        for(int i=0; i<Input!.Length; i++)
-        {   
-            var line = Input![i];
-            if (string.IsNullOrEmpty(line))
-            {
-                new Monkey(group, sb.ToString());
-                sb.Clear();
-            }
-            else if (i == Input!.Length - 1)
-            {
-                sb.AppendLine(line);
-                new Monkey(group, sb.ToString());
-            }
-            else
-            {
-                sb.AppendLine(line);
-            }
-        }
-
-        for(int i=0; i<20; i++)
-        {
-            foreach(var monkey in group.Monkeys)
-            {
-                monkey.Value.Inspect();
-            }
-        }
-        return group.Monkeys.Select(x => x.Value.InspectionCount).OrderByDescending(x => x).Take(2).Aggregate(1, (x,y) => x * y).ToString();
+        return gang.CalculateMonkeyBusinessLevel().ToString();
     }
 
     public override string SolvePart2()
     {
         AssertInputLoaded();
 
-        var group = new MonkeyGroup();
+        var gang = GetMonkeyGang();
+        var mod = gang.Monkeys.Values.Aggregate(1, (divisor, monkey) => divisor * monkey.TestDivisor);
+        gang.Run(10000, x => x % mod);
+
+        return gang.CalculateMonkeyBusinessLevel().ToString();
+    }
+
+    private MonkeyGang GetMonkeyGang()
+    {
+        var gang = new MonkeyGang();
         var sb = new StringBuilder();
 
-        for(int i=0; i<Input!.Length; i++)
-        {   
+        for (int i = 0; i < Input!.Length; i++)
+        {
             var line = Input![i];
             if (string.IsNullOrEmpty(line))
             {
-                new Monkey(group, sb.ToString());
+                gang.AddMonkey(sb.ToString());
                 sb.Clear();
             }
             else if (i == Input!.Length - 1)
             {
                 sb.AppendLine(line);
-                new Monkey(group, sb.ToString(), true);
+                gang.AddMonkey(sb.ToString());
             }
             else
             {
@@ -71,149 +52,115 @@ internal class Day11 : PuzzleBase
             }
         }
 
-        for(int i=0; i<10000; i++)
-        {
-            foreach(var monkey in group.Monkeys)
-            {
-                monkey.Value.Inspect();
-            }
-        }
-        return group.Monkeys.Select(x => x.Value.InspectionCount).OrderByDescending(x => x).Take(2).Aggregate(1, (x,y) => x * y).ToString();
+        return gang;
     }
 
-    private class MonkeyGroup
+    private class MonkeyGang
     {
         public Dictionary<int, Monkey> Monkeys { get; } = new();
 
-        public void Register(Monkey monkey)
+        public void Run(int rounds, Func<long, long> operationAfterInspection)
         {
+            for (int i = 0; i < rounds; i++)
+            {
+                foreach (var monkey in Monkeys.Values)
+                {
+                    monkey.Inspect(operationAfterInspection);
+                }
+            }
+        }
+
+        public void AddMonkey(string monkeyInput)
+        {
+            var monkey = new Monkey(this, monkeyInput);
             Monkeys.Add(monkey.Id, monkey);
         }
 
-        public void TossItemTo(Item item, int monkey)
+        public long CalculateMonkeyBusinessLevel()
+            => Monkeys.Values.Select(x => x.InspectionCount)
+                .OrderByDescending(x => x)
+                .Take(2)
+                .Aggregate(1L, (x, y) => x * y);
+
+        public void TossItemTo(long item, int monkey)
             => Monkeys[monkey].ReceiveItem(item);
-    }
-
-    private class Item
-    {
-        public BigInteger WorryLevel { get; set; }
-
-        public Item(BigInteger initialWorryLevel)
-        {
-            WorryLevel = initialWorryLevel;
-        }
-
-        public void PerformOperation(Func<BigInteger,BigInteger> operation)
-            => WorryLevel = operation(WorryLevel);
     }
 
     private class Monkey
     {
-        private const bool _verboseMode = false;
-
         private static Regex _initRegex
-            = new Regex(@"Mo.+(\d{1,}):\n.+: (.+)\n.+= (.+)\n.+by (\d{1,})\n.+key (\d{1,})\n.+key (\d{1,})", RegexOptions.Compiled);
+            = new Regex(@"Mo.+(\d{1,}):\n.+: (.+)\n.+= (.+)\n.+by (\d{1,})\n.+key (\d{1,})\n.+key (\d{1,})",
+                RegexOptions.Compiled);
 
-        private MonkeyGroup _group;
-        private Func<BigInteger,BigInteger> _operation;
-        private readonly bool _part2;
+        private MonkeyGang _gang;
+        private Func<long, long> _inspectOperation;
 
         public int Id { get; }
+        public Queue<long> Items { get; private set; }
         public int InspectionCount { get; private set; }
-        public List<Item> Items { get; private set; }
-        public Action<Item> Action { get; private set;}
+        public int TestDivisor { get; }
+        public int MonkeyToTossToWhenTrue { get; }
+        public int MonkeyToTossToWhenFalse { get; }
 
-        public Monkey(MonkeyGroup group, string input, bool part2 = false)
+        public Monkey(MonkeyGang group, string input)
         {
-            _group = group;
+            _gang = group;
             var result = _initRegex.Match(input);
             Id = int.Parse(result.Groups[1].Value);
-            Items = new(result.Groups[2].Value.Split(", ").Select(x => new Item(int.Parse(x))));
-            _operation = ParseExpression(result.Groups[3].Value);
-            Action = (x) =>
-            {
-                if (x.WorryLevel % int.Parse(result.Groups[4].Value) == 0)
-                {
-                    PrintWhenVerbose($"\tCurrent worry level is divisible by {result.Groups[4].Value}.");
-                    PrintWhenVerbose($"\tItem with worry level {x.WorryLevel} is thrown to monkey {result.Groups[5].Value}.");
-                    group.TossItemTo(x, int.Parse(result.Groups[5].Value));
-                }
-                else
-                {
-                    PrintWhenVerbose($"\tCurrent worry level is not divisible by {result.Groups[4].Value}.");
-                    PrintWhenVerbose($"\tItem with worry level {x.WorryLevel} is thrown to monkey {result.Groups[6].Value}.");
-                    group.TossItemTo(x, int.Parse(result.Groups[6].Value));
-                }
-            };
-            _part2 = part2;
-            _group.Register(this);
+            Items = new(result.Groups[2].Value.Split(", ").Select(long.Parse));
+            _inspectOperation = ParseOperationExpression(result.Groups[3].Value);
+            TestDivisor = int.Parse(result.Groups[4].Value);
+            MonkeyToTossToWhenTrue = int.Parse(result.Groups[5].Value);
+            MonkeyToTossToWhenFalse = int.Parse(result.Groups[6].Value);
         }
 
-        public void ReceiveItem(Item item)
-        {
-            Items.Add(item);
-        }
+        public void ReceiveItem(long item)
+            => Items.Enqueue(item);
 
-        public void Inspect()
+        public void Inspect(Func<long, long> operationAfterInspection)
         {
-            PrintWhenVerbose($"Monkey {Id}:");
-            foreach(var item in Items)
+            while (Items.TryDequeue(out var item))
             {
-                PrintWhenVerbose($"Monkey inspects an item with a worry level of {item.WorryLevel}.");
-                item.PerformOperation(_operation);
-                PrintWhenVerbose($"\tWorry level changed to {item.WorryLevel}.");
-                if (!_part2)
-                {
-                    item.PerformOperation(x => x / 3);
-                    PrintWhenVerbose($"\tMonkey gets bored with item. Worry level is divided by 3 to {item.WorryLevel}.");
-                }
-                Action(item);
+                item = _inspectOperation(item);
+                item = operationAfterInspection(item);
+                _gang.TossItemTo(item, item % TestDivisor == 0 ? MonkeyToTossToWhenTrue : MonkeyToTossToWhenFalse);
                 InspectionCount++;
             }
-            Items.Clear();
         }
 
-        private Func<BigInteger,BigInteger> ParseExpression(string expression)
+        private Func<long, long> ParseOperationExpression(string expression)
         {
             var expressionParts = expression.Split(' ');
             return (expressionParts[0], expressionParts[1], expressionParts[2]) switch
             {
                 ("old", var operand, "old") => operand switch
                 {
-                    "+" => (x) => x + x,
-                    "-" => (x) => x - x,
-                    "*" => (x) => x * x,
-                    "/" => (x) => x / x,
+                    "+" => (x) => checked(x + x),
+                    "-" => (x) => checked(x - x),
+                    "*" => (x) => checked(x * x),
+                    "/" => (x) => checked(x / x),
                     _ => throw new InvalidOperationException($"Unhandled operand '{operand}'")
                 },
                 ("old", var operand, var right)
                     when right.All(char.IsNumber) => operand switch
-                {
-                    "+" => (x) => x + int.Parse(right),
-                    "-" => (x) => x - int.Parse(right),
-                    "*" => (x) => x * int.Parse(right),
-                    "/" => (x) => x / int.Parse(right),
-                    _ => throw new InvalidOperationException($"Unhandled operand '{operand}'")
-                },
+                    {
+                        "+" => (x) => checked(x + int.Parse(right)),
+                        "-" => (x) => checked(x - int.Parse(right)),
+                        "*" => (x) => checked(x * int.Parse(right)),
+                        "/" => (x) => checked(x / int.Parse(right)),
+                        _ => throw new InvalidOperationException($"Unhandled operand '{operand}'")
+                    },
                 (var left, var operand, var right)
                     when left.All(char.IsNumber) && right.All(char.IsNumber) => operand switch
-                {
-                    "+" => (x) => int.Parse(left) + int.Parse(right),
-                    "-" => (x) => int.Parse(left) - int.Parse(right),
-                    "*" => (x) => int.Parse(left) * int.Parse(right),
-                    "/" => (x) => int.Parse(left) / int.Parse(right),
-                    _ => throw new InvalidOperationException($"Unhandled operand '{operand}'")
-                },
+                    {
+                        "+" => (x) => checked(int.Parse(left) + int.Parse(right)),
+                        "-" => (x) => checked(int.Parse(left) - int.Parse(right)),
+                        "*" => (x) => checked(int.Parse(left) * int.Parse(right)),
+                        "/" => (x) => checked(int.Parse(left) / int.Parse(right)),
+                        _ => throw new InvalidOperationException($"Unhandled operand '{operand}'")
+                    },
                 _ => throw new InvalidOperationException($"Unsupported expression '{expression}'")
             };
-        }
-
-        private static void PrintWhenVerbose(string message)
-        {
-            if (_verboseMode)
-            {
-                Console.WriteLine(message);
-            }
         }
     }
 }
