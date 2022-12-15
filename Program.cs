@@ -1,6 +1,6 @@
 ﻿using advent_of_code_2022;
 
-Console.WriteLine("-- Advent of code 2022 --");
+Console.WriteLine("\u001b[1;92m-- Advent of code 2022 --\u001b[0m");
 try
 {
     var solver = new PuzzleSolver();
@@ -15,5 +15,5 @@ try
 }
 catch(Exception ex)
 {
-    Console.WriteLine($"Unhandled exception not caught by {nameof(PuzzleSolver)}: {ex.Message}");
+    Console.WriteLine($"\u001b[1;91mUnhandled exception not caught by {nameof(PuzzleSolver)}: {ex.Message}\u001b[0m");
 }
