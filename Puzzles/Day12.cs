@@ -54,8 +54,24 @@ internal class Day12 : PuzzleBase
         {
             for (int j = 0; j < matrix[i].Length; j++)
             {
-                Console.Write(matrix[i][j].Visited ? "#" : ".");
+                if (matrix[i][j].Elevation == 'S')
+                {
+                    Console.Write($"\u001b[38;5;10mS\u001b[0m");
+                }
+                else if (matrix[i][j].Elevation == 'E')
+                {
+                    Console.Write($"\u001b[38;5;9mE\u001b[0m");
+                }
+                else if (matrix[i][j].Visited)
+                {
+                    Console.Write($"\u001b[38;5;81m{matrix[i][j].Elevation}\u001b[0m");
+                }
+                else
+                {
+                    Console.Write(matrix[i][j].Elevation);
+                }
             }
+
             Console.WriteLine();
         }
     }
