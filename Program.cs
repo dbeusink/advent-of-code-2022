@@ -27,6 +27,7 @@ try
 catch(Exception ex)
 {
     Console.WriteLine($"\u001b[1;91mUnhandled exception not caught by {nameof(PuzzleSolver)}: {ex.Message}\u001b[0m");
+    throw; // Debug
 }
 
 Dictionary<char, string> GetCommands()

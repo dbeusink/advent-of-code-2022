@@ -35,6 +35,7 @@ internal class PuzzleSolver
             catch(Exception ex)
             {
                 Console.WriteLine($"Puzzle \u001b[1;92m'{name}'\u001b[0m: \u001b[1;91mException! {ex.Message}\u001b[0m");
+                throw; // Debug
             }
         }
         else
