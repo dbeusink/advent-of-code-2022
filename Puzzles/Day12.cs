@@ -50,6 +50,11 @@ internal class Day12 : PuzzleBase
 
     private void PrintMatrix(Location[][] matrix)
     {
+        if (!GlobalSettings.EnableVisualizations)
+        {
+            return;
+        }
+
         for (int i = 0; i < matrix.Length; i++)
         {
             for (int j = 0; j < matrix[i].Length; j++)
