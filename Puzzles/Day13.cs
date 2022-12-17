@@ -1,8 +1,10 @@
-using System.Collections.Generic;
 using System.Text.Json.Nodes;
 
 namespace advent_of_code_2022.Puzzles;
 
+// This was by far the hardest one so far. Part 1 was very easy because I immediately took the JsonNode parsing approach.
+// Part 2 on the on the other side... yeez, it took me way to long to figure that one out due to a little bug in the code :(
+//
 internal class Day13 : PuzzleBase
 {
     public Day13() : base(nameof(Day13)) { }
@@ -11,11 +13,9 @@ internal class Day13 : PuzzleBase
     {
         AssertInputLoaded();
 
-        var packets = GetPackets().ToArray();
-        var validator = new DistressMessageValidator();
-
-        var result = GetPackets().Select((packet, index) =>
-            validator.IsValidPacket(packet) ? index + 1 : 0)
+        var result = GetPackets()
+            .Chunk(2) // Get the packets in pairs
+            .Select((packets, index) => packets[0].CompareTo(packets[1]) < 0 ? index + 1 : 0) // Compare returns -1 when a packet is in the right order
             .Sum();
 
         return result.ToString();
@@ -25,160 +25,55 @@ internal class Day13 : PuzzleBase
     {
         AssertInputLoaded();
 
-        var packets = GetPackets().ToArray();
-        var validator = new DistressMessageValidator();
+        var dividerPackets = new Packet[] { new Packet("[[2]]"), new Packet("[[6]]") };
 
-        foreach(var packet in GetPackets())
-        {
-            validator.IsValidPacket(packet);
-        }
-        var debug = validator.GetIndicesOfSeparators(2, 6).ToList();
-        var result = debug.Aggregate(1, (x,y) => x * y);
-
+        // Jup overkill, but I hate fixed input. When the Elves will update the distress protocol
+        // we will be ready for some more divider packets ;)
+        //
+        var result = GetPackets()
+            .Concat(dividerPackets)
+            .OrderBy(x => x)
+            .Select((p, i) => new { Index = i + 1, Packet = p })
+            .IntersectBy(dividerPackets, x => x.Packet)
+            .Aggregate(1, (aggregation, x) => x.Index * aggregation);
+    
         return result.ToString();
     }
 
-    private IEnumerable<Tuple<string, string>> GetPackets()
+    private IEnumerable<Packet> GetPackets()
+        => Input!.Where(x => x.StartsWith('[')).Select(x => new Packet(x));
+
+    private class Packet : IComparable<Packet>
     {
-        foreach (var pair in Input!.Where(x => x.StartsWith('[')).Chunk(2))
+        public JsonArray Message { get; }
+
+        public Packet(string message)
         {
-            yield return new Tuple<string, string>(pair[0], pair[1]);
-        }
-    }
-
-    private class DistressMessageValidator
-    {
-        private bool _newPacket;
-        private List<int> _validatedMessageHeaders = new();
-
-        public bool IsValidPacket(Tuple<string, string> packetPair)
-        {
-            _newPacket = true;
-            var left = JsonNode.Parse(packetPair.Item1)!.AsArray();
-            var right = JsonNode.Parse(packetPair.Item2)!.AsArray();
-
-            return IsValidPacketPair(left, right) > 0;
+            Message = JsonNode.Parse(message)!.AsArray();
         }
 
-        public IEnumerable<int> GetIndicesOfSeparators(params int[] separators)
+        public int CompareTo(Packet? other)
         {
-            var offset = 1;
-            var orderedMessages = _validatedMessageHeaders.OrderBy(x => x);
-            foreach(var separator in separators)
-            {
-                yield return orderedMessages.TakeWhile(x => x <= separator).Count() + offset++;
-            }
-
+            return Compare(Message, other!.Message);
         }
 
-        private int IsValidPacketPair(JsonArray left, JsonArray right)
+        private int Compare(JsonNode leftNode, JsonNode rightNode)
         {
-            for (int i = 0; i < left.Count; i++)
-            {
-                if (i >= right.Count)
-                {
-                    // Store headers
-                    if (_newPacket)
-                    {
-                        var leftNode = left[i];
-                        if (leftNode is JsonValue leftValue)
-                        {
-                            _validatedMessageHeaders.Add(leftValue.GetValue<int>());
-                        }
-                        else
-                        {
-                            while (leftNode is JsonArray array)
-                            {
-                                if (array.Count == 0)
-                                {
-                                    _validatedMessageHeaders.Add(0);
-                                    break;
-                                }
-                                else if (array[0] is JsonValue value)
-                                {
-                                    _validatedMessageHeaders.Add(value.GetValue<int>());
-                                    break;
-                                }
-                                else
-                                {
-                                    leftNode = array[0];
-                                }
-                            }
-                        }
-                        _validatedMessageHeaders.Add(0);
-                        _newPacket = false;
-                    }
-                    return -1;
-                }
-
-                if (left[i] is JsonValue leftJsonValue && right[i] is JsonValue rightJsonValue)
-                {
-                    var leftValue = leftJsonValue.GetValue<int>();
-                    var rightValue = rightJsonValue.GetValue<int>();
-
-                    // Store headers
-                    if (_newPacket)
-                    {
-                        _validatedMessageHeaders.Add(leftValue);
-                        _validatedMessageHeaders.Add(rightValue);
-                        _newPacket = false;
-                    }
-
-                    if (leftValue != rightValue)
-                    {
-                        return (leftValue < rightValue) ? 1 : -1;
-                    }
-                }
-                else
-                {
-                    var leftArray = left[i] is JsonArray al ? al : new JsonArray() { left[i]!.GetValue<int>() };
-                    var rightArray = right[i] is JsonArray ar ? ar : new JsonArray() { right[i]!.GetValue<int>() };
-                    var result = IsValidPacketPair(leftArray, rightArray);
-                    if (result != 0)
-                    {
-                        return result;
-                    }
-                }
+            if (leftNode is JsonValue leftValue && rightNode is JsonValue rightValue)
+            {  
+                var left = leftValue.GetValue<int>();
+                var right = rightValue.GetValue<int>();
+                return left - right;
             }
-
-            if (right.Count > left.Count)
+            else
             {
-                // Store headers
-                if (_newPacket)
-                {
-                    _validatedMessageHeaders.Add(0);
-                    var rightNode = right[0];
-                    if (rightNode is JsonValue rightValue)
-                    {
-                        _validatedMessageHeaders.Add(rightValue.GetValue<int>());
-                    }
-                    else
-                    {
-                        while (rightNode is JsonArray array)
-                        {
-                            if (array.Count == 0)
-                            {
-                                _validatedMessageHeaders.Add(0);
-                                break;
-                            }
-                            else if (array[0] is JsonValue value)
-                            {
-                                _validatedMessageHeaders.Add(value.GetValue<int>());
-                                break;
-                            }
-                            else
-                            {
-                                rightNode = array[0];
-                            }
-                        }
-                    }
-                    _newPacket = false;
-                }
+                var leftArray = leftNode as JsonArray ?? new JsonArray() { leftNode.GetValue<int>() };
+                var rightArray = rightNode as JsonArray ?? new JsonArray() { rightNode.GetValue<int>() };
 
-                return 1;
+                // Zip the arrays as far as possible and compare
+                return Enumerable.Zip(leftArray, rightArray).Select(x => Compare(x.First!, x.Second!))
+                    .FirstOrDefault(x => x != 0, leftArray.Count - rightArray.Count);
             }
-
-            return 0;
         }
     }
 }
