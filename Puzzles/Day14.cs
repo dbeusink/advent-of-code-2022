@@ -2,141 +2,211 @@ namespace advent_of_code_2022.Puzzles;
 
 internal class Day14 : PuzzleBase
 {
-    public Day14() : base(nameof(Day14)) { }
+    public Day14() : base(nameof(Day14)) {}
 
     public override string SolvePart1()
     {
         AssertInputLoaded();
-        GlobalSettings.EnableVisualizations = true;
 
-        var grid = GetGrid(500);
-        var simulator = new SandSimulator(grid, 500);
-        var units = simulator.GetUnits();
+        var simulator = new SandSimulator(Input!, 500, false);
+        var units = simulator.Run();
 
-        return units.ToString(); ;
+        if (GlobalSettings.EnableVisualizations)
+        {
+            simulator.Plot();
+        }
+
+        return units.ToString();
     }
 
     public override string SolvePart2()
     {
         AssertInputLoaded();
 
-        return "";
+        var simulator = new SandSimulator(Input!, 500, true);
+        var units = simulator.Run();
+
+        return units.ToString();
     }
 
-    private Position[,] GetGrid(int start)
+    private class GridHelper
     {
-        var inputPositions = new List<Position>();
-        foreach (var line in Input!)
-        {
-            var coords = line.Split(" -> ").Select(x => x.Split(',')).ToArray();
-            for (int i = 0; i < coords.Length; i++)
-            {
-                var x = int.Parse(coords[i][0]);
-                var y = int.Parse(coords[i][1]);
+        private int _resizeCount = 1;
 
-                if (i == 0)
+        public Position[,] ResizeFloor(Position[,] source)
+        {
+            // We resize the floor with the resizeCount value,
+            // every resize the resizeCount will be multiplied by 2.
+            //
+            var height = source.GetUpperBound(0) + 1;
+            var newWidth =  source.GetUpperBound(1) - source.GetLowerBound(1) + 1 + (_resizeCount * 2);
+            var newWidthLowerBound = source.GetLowerBound(1) - _resizeCount;
+
+            // Using Array.CreateInstance to use lower bounds for width
+            var newGrid = (Position[,])Array.CreateInstance(typeof(Position),
+                new int[] { height, newWidth },
+                new int[] { 0, newWidthLowerBound });
+
+            // Initialize with old values
+            for (int i = 0; i <= source.GetUpperBound(0); i++)
+            {
+                for (int j = source.GetLowerBound(1); j <= source.GetUpperBound(1); j++)
                 {
-                    inputPositions.Add(new Position(x, y, PositionState.Rock));
+                    newGrid[i, j] = source[i, j];
                 }
-                else
+            }
+
+            // Initialize null values
+            for (int i = 0; i <= newGrid.GetUpperBound(0); i++)
+            {
+                for (int j = newGrid.GetLowerBound(1); j <= newGrid.GetUpperBound(1); j++)
                 {
-                    var previous = inputPositions.Last();
-                    // Move vertical
-                    if (previous.X == x)
+                    if (newGrid[i, j] == null)
                     {
-                        // Move down
-                        if (previous.Y > y)
+                        if (i == newGrid.GetUpperBound(0))
                         {
-                            for (int j = previous.Y - 1; j >= y; j--)
-                            {
-                                inputPositions.Add(new Position(x, j, PositionState.Rock));
-                            }
+                            newGrid[i, j] = new Position(j, i, PositionState.Rock);
                         }
-                        // Move up
                         else
                         {
-                            for (int j = previous.Y + 1; j <= y; j++)
-                            {
-                                inputPositions.Add(new Position(x, j, PositionState.Rock));
-                            }
+                            newGrid[i, j] = new Position(j, i, PositionState.Air);
                         }
                     }
-                    // Move horizontal
+                }
+            }
+            _resizeCount *= 2; // Multiply by two to decrease the amount of resizing
+
+            return newGrid;
+        }
+
+        public static Position[,] CreateGrid(string[] input, int start, bool withFloor)
+        {
+            var inputPositions = new List<Position>();
+            foreach (var line in input)
+            {
+                var coords = line.Split(" -> ").Select(x => x.Split(',')).ToArray();
+                for (int i = 0; i < coords.Length; i++)
+                {
+                    var x = int.Parse(coords[i][0]);
+                    var y = int.Parse(coords[i][1]);
+
+                    if (i == 0)
+                    {
+                        inputPositions.Add(new Position(x, y, PositionState.Rock));
+                    }
                     else
                     {
-                        // Move left
-                        if (previous.X > x)
+                        var previous = inputPositions.Last();
+                        // Vertical (|)
+                        if (previous.X == x)
                         {
-                            for (int j = previous.X - 1; j >= x; j--)
+                            // Down
+                            if (previous.Y > y)
                             {
-                                inputPositions.Add(new Position(j, y, PositionState.Rock));
+                                for (int j = previous.Y - 1; j >= y; j--)
+                                {
+                                    inputPositions.Add(new Position(x, j, PositionState.Rock));
+                                }
+                            }
+                            // Up
+                            else if (previous.Y < y)
+                            {
+                                for (int j = previous.Y + 1; j <= y; j++)
+                                {
+                                    inputPositions.Add(new Position(x, j, PositionState.Rock));
+                                }
                             }
                         }
-                        // Move right
-                        else
+                        // Horizontal (-)
+                        else if (previous.Y == y)
                         {
-                            for (int j = previous.X + 1; j <= x; j++)
+                            // Left
+                            if (previous.X > x)
                             {
-                                inputPositions.Add(new Position(j, x, PositionState.Rock));
+                                for (int j = previous.X - 1; j >= x; j--)
+                                {
+                                    inputPositions.Add(new Position(j, y, PositionState.Rock));
+                                }
+                            }
+                            // Right
+                            else if (previous.X < x)
+                            {
+                                for (int j = previous.X + 1; j <= x; j++)
+                                {
+                                    inputPositions.Add(new Position(j, y, PositionState.Rock));
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        // Create grid
-        var height = inputPositions.Max(x => x.Y) + 1;
-        var minWidth = inputPositions.Min(x => x.X);
-        var maxWidth = inputPositions.Max(x => x.X) + 1;
+            // Create grid
+            var height = inputPositions.Max(x => x.Y) + (withFloor ? 3 : 1); // Floor adds two rows
+            var minWidth = inputPositions.Min(x => x.X);
+            var maxWidth = inputPositions.Max(x => x.X) + 1;
 
-        // Using Array.CreateInstance to use lower bounds for width
-        var grid = (Position[,])Array.CreateInstance(typeof(Position),
-            new int[] { height, maxWidth - minWidth },
-            new int[] { 0, minWidth });
+            // Using Array.CreateInstance to use lower bounds in the second dimension for width
+            var grid = (Position[,])Array.CreateInstance(typeof(Position),
+                new int[] { height, maxWidth - minWidth },
+                new int[] { 0, minWidth });
 
-        // Initialize grid
-        for (int i = 0; i <= grid.GetUpperBound(0); i++)
-        {
-            for (int j = grid.GetLowerBound(1); j <= grid.GetUpperBound(1); j++)
+            // Initialize grid (all air)
+            for (int i = 0; i <= grid.GetUpperBound(0); i++)
             {
-                grid[i, j] = new Position(j, i, PositionState.Air);
+                for (int j = grid.GetLowerBound(1); j <= grid.GetUpperBound(1); j++)
+                {
+                    grid[i, j] = new Position(j, i, PositionState.Air);
+                }
             }
+
+            // Map input positions on grid
+            inputPositions.ForEach(p => grid[p.Y, p.X] = p);
+            grid[0, start].State = PositionState.Start;
+
+            // Add floor when running for part 2
+            if (withFloor)
+            {
+                for (int i = grid.GetLowerBound(1); i <= grid.GetUpperBound(1); i++)
+                {
+                    grid[height - 1, i].State = PositionState.Rock;
+                }
+            }
+
+            return grid;
         }
 
-        // Map positions on grid
-        inputPositions.ForEach(p => grid[p.Y, p.X] = p);
-        grid[0, start].State = PositionState.Start;
-
-        return grid;
     }
 
     private class SandSimulator
     {
-        private readonly Position[,] _grid;
+        private readonly bool _hasFloor;
+        private readonly GridHelper _gridHelper;
         private readonly Position _startPosition;
+        private Position[,] _grid;
         private Position _currentPosition
 ;
-        public SandSimulator(Position[,] grid, int start)
+        public SandSimulator(string[] input, int start, bool hasFloor)
         {
-            _grid = grid;
+            _gridHelper = new GridHelper();
+            _grid = GridHelper.CreateGrid(input, start, hasFloor);
             _currentPosition = _startPosition = _grid[0, start];
+            _hasFloor = hasFloor;
         }
 
-        public int GetUnits()
+        public int Run()
         {
             int count = 0;
-            Console.Clear();
-            Console.CursorVisible = false;
-
-            while (SimulateStep())
+            while (SimulateStep() && _startPosition.State != PositionState.Sand)
             {
                 _currentPosition = _startPosition;
                 count++;
-                //Plot(false);
-                //Thread.Sleep(25);
             }
-            Plot(true);
+
+            if (_startPosition.State == PositionState.Sand)
+            {
+                count++;
+            }
 
             return count;
         }
@@ -144,94 +214,87 @@ internal class Day14 : PuzzleBase
         private bool SimulateStep()
         {
             var current = _currentPosition;
-            var next = _grid[_currentPosition.Y + 1, _currentPosition.X];
+            var next = _grid[_currentPosition.Y + 1, _currentPosition.X]; // 1 position below current
 
+            // Step 1: Simulate the unit of sand falling down in the air
             while (next.State == PositionState.Air)
             {
                 current = next;
-
                 if (current.Y == _grid.GetUpperBound(0))
                 {
-                    return false;
+                    return false; // The unit of sand has fallen into the abyss
                 }
 
                 next = _grid[current.Y + 1, current.X];
             }
 
-            // Diagonal left
+            // Check if we need to resize the (not so) infinite floor
+            if (_hasFloor && next.Y == _grid.GetUpperBound(0) &&
+                (next.X - 1 < _grid.GetLowerBound(1) || next.X + 1 > _grid.GetUpperBound(1)))
+            {
+                _grid = _gridHelper.ResizeFloor(_grid);
+            }
+
+            // Step 2: Check if we can move diagonal left
             if (next.X - 1 < _grid.GetLowerBound(1))
             {
-                return false;
+                return false; // Oh noes, the unit of sand has fallen into the abyss
             }
             else
             {
-                var left = _grid[current.Y, current.X - 1];
-                var diagLeft = _grid[next.Y, next.X - 1];
-                if (diagLeft.State == PositionState.Air && left.State == PositionState.Air)
+                var diagonal = _grid[next.Y, next.X - 1];
+                if (diagonal.State == PositionState.Air)
                 {
-                    _currentPosition = diagLeft;
+                    // The position diagonal position seems to be air,
+                    // apply the regular simulation from this starting position (recursive).
+                    //
+                    _currentPosition = diagonal;
                     return SimulateStep();
                 }
             }
 
-            // Diagonal right
+            // Step 3: Check if we can move diagonal right
             if (next.X + 1 > _grid.GetUpperBound(1))
             {
-                return false;
+                return false; // Oh noes, the unit of sand has fallen into the abyss
             }
             else
             {
-                var right = _grid[current.Y, current.X + 1];
-                var diagRight = _grid[next.Y, next.X + 1];
-                if (diagRight.State == PositionState.Air && right.State == PositionState.Air)
+                var diagonal = _grid[next.Y, next.X + 1];
+                if (diagonal.State == PositionState.Air)
                 {
-                    _currentPosition = diagRight;
+                    // The position diagonal position seems to be air,
+                    // apply the regular simulation from this starting position (recursive).
+                    //
+                    _currentPosition = diagonal;
                     return SimulateStep();
                 }
             }
 
+            // The unit of sand has come to a stop
             current.State = PositionState.Sand;
             _currentPosition = current;
 
             return true;
         }
 
-        public void Plot(bool lastPlot)
+        public void Plot()
         {
-            if (!GlobalSettings.EnableVisualizations)
-            {
-                return;
-            }
-
-            var initialCursorLeft = Console.CursorLeft;
-            var initialCursorTop = Console.CursorTop;
-
             for (int i = 0; i <= _grid.GetUpperBound(0); i++)
             {
-                var lowerBound = _grid.GetLowerBound(1);
-                for (int j = lowerBound; j <= _grid.GetUpperBound(1); j++)
+                for (int j = _grid.GetLowerBound(1); j <= _grid.GetUpperBound(1); j++)
                 {
                     var sign = _grid[i, j].State switch
                     {
-                        PositionState.Air => '.',
-                        PositionState.Rock => '#',
-                        PositionState.Sand => 'O',
-                        PositionState.Start => '+',
-                        _ => '~'
+                        PositionState.Air => " ",
+                        PositionState.Rock => "#",
+                        PositionState.Sand => "\u001b[38;5;81mO\u001b[0m",
+                        PositionState.Start => "+",
+                        _ => "~"
                     };
                     Console.Write(sign);
                 }
                 Console.WriteLine();
-            }
-
-            if (lastPlot)
-            {
-                Console.SetCursorPosition(initialCursorLeft, Console.CursorTop + 1);
-                Console.CursorVisible = true;
-            }
-            else
-            {
-                Console.SetCursorPosition(initialCursorLeft, initialCursorTop);
             }
         }
     }
