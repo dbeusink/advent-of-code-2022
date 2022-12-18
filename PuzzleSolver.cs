@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using advent_of_code_2022.Puzzles;
 namespace advent_of_code_2022;
@@ -27,10 +28,16 @@ internal class PuzzleSolver
             {
                 puzzle.Initialize();
                 Console.WriteLine($"Puzzle \u001b[1;92m'{name}'\u001b[0m: Solving puzzle...");
+
+                var sw = Stopwatch.StartNew();
                 var resultPart1 = puzzle.SolvePart1();
-                Console.WriteLine($"Puzzle \u001b[1;92m'{name}'\u001b[0m: Output part 1: \u001b[1;96m{resultPart1}\u001b[0m");
+                sw.Stop();
+                Console.WriteLine($"Puzzle \u001b[1;92m'{name}'\u001b[0m: Output part 1 (\u001b[1;95m{sw.ElapsedMilliseconds} ms\u001b[0m): \u001b[1;96m{resultPart1}\u001b[0m");
+
+                sw.Restart();
                 var resultPart2 = puzzle.SolvePart2();
-                Console.WriteLine($"Puzzle \u001b[1;92m'{name}'\u001b[0m: Output part 2: \u001b[1;96m{resultPart2}\u001b[0m");
+                sw.Stop();
+                Console.WriteLine($"Puzzle \u001b[1;92m'{name}'\u001b[0m: Output part 2 (\u001b[1;95m{sw.ElapsedMilliseconds} ms\u001b[0m): \u001b[1;96m{resultPart2}\u001b[0m");
             }
             catch(Exception ex)
             {
