@@ -2,12 +2,14 @@ namespace advent_of_code_2022.Puzzles;
 
 internal abstract class PuzzleBase
 {
-    public string Name { get; private set; }
+    public string Name { get; }
+    public bool IsLongRunning { get; }
     protected string[]? Input { get; private set; }
 
-    public PuzzleBase(string puzzleName)
+    public PuzzleBase(string puzzleName, bool longRunning = false)
     {
         Name = puzzleName;
+        IsLongRunning = longRunning;
     }
 
     public void Initialize()
